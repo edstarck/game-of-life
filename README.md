@@ -1,6 +1,7 @@
 ### install
 
-clone repo and run code by liveserver
+- Clone repo and run code by liveserver
+- [DEMO](https://edstarck.github.io/game-of-life/)
 
 ### Terms:
 
