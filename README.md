@@ -1,3 +1,7 @@
+### install
+
+clone repo and run code by liveserver
+
 ### Terms:
 
 - Any live cell with fewer than two live neighbours dies, as if by underpopulation.
@@ -52,5 +56,10 @@ However, this approach can become quite difficult to implement. Moreover, for la
 
 Instead, you can try other optimization techniques:
 
-- Algorithm HashLife
-- Use webworker
+- Use webworker branch optimisation-webworker
+- Swap array branch optimisation-swap-array
+- Instead of redrawing every cell at every step, you can track changes and redraw only those cells that have changed
+  branch optimisation-set, merge into master, best of all
+- add offscreen canvas
+- Instead of iterating over every cell on the grid, you will only iterate over the active cells and their neighbors.
+  branch optimisation-only-active-cells
