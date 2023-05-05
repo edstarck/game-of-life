@@ -1,5 +1,6 @@
 const state = {
   grid: null,
+  nextGrid: null,
   gridWidth: null,
   gridHeight: null,
   cellSize: 10,
@@ -14,7 +15,11 @@ const state = {
 
 const methods = {
   drawGrid() {
-    const ctx = state.getCtx()
+    // Создание offscreen canvas с такими же размерами, как и основной canvas
+    const offscreenCanvas = document.createElement('canvas')
+    offscreenCanvas.width = state.canvas.width
+    offscreenCanvas.height = state.canvas.height
+    const offscreenCtx = offscreenCanvas.getContext('2d')
 
     for (const cell of state.changedCells) {
       const [x, y] = cell.split(',').map(Number)
@@ -24,12 +29,16 @@ const methods = {
       const xPos = x * state.cellSize
       const yPos = y * state.cellSize
 
-      ctx.fillStyle = fillStyle
-      ctx.fillRect(xPos, yPos, state.cellSize, state.cellSize)
-      ctx.strokeRect(xPos, yPos, state.cellSize, state.cellSize)
+      offscreenCtx.fillStyle = fillStyle
+      offscreenCtx.fillRect(xPos, yPos, state.cellSize, state.cellSize)
+      offscreenCtx.strokeRect(xPos, yPos, state.cellSize, state.cellSize)
     }
 
     state.changedCells.clear()
+
+    // Отображение offscreen canvas на основной canvas
+    const ctx = state.getCtx()
+    ctx.drawImage(offscreenCanvas, 0, 0)
   },
   getNeighborCount(x, y) {
     let count = 0
@@ -73,8 +82,10 @@ const mutation = {
   },
   createEmptyGrid() {
     state.grid = new Array(state.gridWidth)
+    state.nextGrid = new Array(state.gridWidth)
     for (let i = 0; i < state.gridWidth; i++) {
       state.grid[i] = new Array(state.gridHeight).fill(0)
+      state.nextGrid[i] = new Array(state.gridHeight).fill(0)
     }
 
     // Initialize changedCells with all cell coordinates
@@ -85,26 +96,48 @@ const mutation = {
     }
   },
   updateGrid() {
-    const {drawGrid, getNeighborCount} = methods
-    const newGrid = state.grid.map((row) => [...row])
+    const {getNeighborCount} = methods
+    let newGrid = JSON.parse(JSON.stringify(state.grid))
+    let activeCells = new Set()
 
+    // Поиск активных клеток
     for (let x = 0; x < state.gridWidth; x++) {
       for (let y = 0; y < state.gridHeight; y++) {
         let neighbors = getNeighborCount(x, y)
-        if (state.grid[x][y] === 1 && (neighbors < 2 || neighbors > 3)) {
-          newGrid[x][y] = 0
-        } else if (state.grid[x][y] === 0 && neighbors === 3) {
-          newGrid[x][y] = 1
-        }
-
-        if (newGrid[x][y] !== state.grid[x][y]) {
-          state.changedCells.add(`${x},${y}`)
+        if (state.grid[x][y] === 1 || neighbors === 3) {
+          activeCells.add(`${x},${y}`)
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              let nx = (x + dx + state.gridWidth) % state.gridWidth
+              let ny = (y + dy + state.gridHeight) % state.gridHeight
+              activeCells.add(`${nx},${ny}`)
+            }
+          }
         }
       }
     }
 
+    // Обновление активных клеток
+    for (let cell of activeCells) {
+      let [x, y] = cell.split(',').map(Number)
+      let neighbors = getNeighborCount(x, y)
+      if (state.grid[x][y] === 1 && (neighbors < 2 || neighbors > 3)) {
+        newGrid[x][y] = 0
+        state.changedCells.add(cell)
+      } else if (state.grid[x][y] === 0 && neighbors === 3) {
+        newGrid[x][y] = 1
+        state.changedCells.add(cell)
+      }
+    }
+
+    if (JSON.stringify(newGrid) === JSON.stringify(state.grid)) {
+      clearInterval(state.gameInterval)
+      alert('Игра окончена!')
+      return
+    }
+
     state.grid = newGrid
-    drawGrid()
+    methods.drawGrid()
   },
 }
 
@@ -135,7 +168,9 @@ state.canvas.addEventListener('click', function (event) {
 // Actions UI
 document.getElementById('start-btn').addEventListener('click', function () {
   const {updateGrid} = mutation
-  state.gameInterval = setInterval(updateGrid, 100)
+  state.gameInterval = setInterval(function () {
+    requestAnimationFrame(updateGrid)
+  }, 100)
   //   updateGrid()
 })
 document.getElementById('pause-btn').addEventListener('click', function () {
