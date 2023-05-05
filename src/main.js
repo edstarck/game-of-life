@@ -1,5 +1,6 @@
 const state = {
   grid: null,
+  nextGrid: null,
   gridWidth: null,
   gridHeight: null,
   cellSize: 10,
@@ -73,8 +74,10 @@ const mutation = {
   },
   createEmptyGrid() {
     state.grid = new Array(state.gridWidth)
+    state.nextGrid = new Array(state.gridWidth)
     for (let i = 0; i < state.gridWidth; i++) {
       state.grid[i] = new Array(state.gridHeight).fill(0)
+      state.nextGrid[i] = new Array(state.gridHeight).fill(0)
     }
 
     // Initialize changedCells with all cell coordinates
@@ -92,18 +95,28 @@ const mutation = {
       for (let y = 0; y < state.gridHeight; y++) {
         let neighbors = getNeighborCount(x, y)
         if (state.grid[x][y] === 1 && (neighbors < 2 || neighbors > 3)) {
-          newGrid[x][y] = 0
+          state.nextGrid[x][y] = 0
         } else if (state.grid[x][y] === 0 && neighbors === 3) {
-          newGrid[x][y] = 1
+          state.nextGrid[x][y] = 1
+        } else {
+          state.nextGrid[x][y] = state.grid[x][y]
         }
 
-        if (newGrid[x][y] !== state.grid[x][y]) {
+        // Add cells to the changedCells set only if their state has changed
+        if (state.nextGrid[x][y] !== state.grid[x][y]) {
           state.changedCells.add(`${x},${y}`)
         }
       }
     }
 
-    state.grid = newGrid
+    if (JSON.stringify(state.nextGrid) === JSON.stringify(state.grid)) {
+      clearInterval(state.gameInterval)
+      alert('Игра окончена!')
+      return
+    }
+
+    // Swap grid and nextGrid
+    ;[state.grid, state.nextGrid] = [state.nextGrid, state.grid]
     drawGrid()
   },
 }
@@ -112,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const {createCanvas, createEmptyGrid} = mutation
   const {drawGrid} = methods
 
-  createCanvas('app', {w: 1000, h: 1000})
+  createCanvas('app', {w: 2000, h: 2000})
   createEmptyGrid()
   drawGrid()
 })
