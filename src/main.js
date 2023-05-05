@@ -96,36 +96,48 @@ const mutation = {
     }
   },
   updateGrid() {
-    const {drawGrid, getNeighborCount} = methods
-    const newGrid = state.grid.map((row) => [...row])
+    const {getNeighborCount} = methods
+    let newGrid = JSON.parse(JSON.stringify(state.grid))
+    let activeCells = new Set()
 
+    // Поиск активных клеток
     for (let x = 0; x < state.gridWidth; x++) {
       for (let y = 0; y < state.gridHeight; y++) {
         let neighbors = getNeighborCount(x, y)
-        if (state.grid[x][y] === 1 && (neighbors < 2 || neighbors > 3)) {
-          state.nextGrid[x][y] = 0
-        } else if (state.grid[x][y] === 0 && neighbors === 3) {
-          state.nextGrid[x][y] = 1
-        } else {
-          state.nextGrid[x][y] = state.grid[x][y]
-        }
-
-        // Add cells to the changedCells set only if their state has changed
-        if (state.nextGrid[x][y] !== state.grid[x][y]) {
-          state.changedCells.add(`${x},${y}`)
+        if (state.grid[x][y] === 1 || neighbors === 3) {
+          activeCells.add(`${x},${y}`)
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              let nx = (x + dx + state.gridWidth) % state.gridWidth
+              let ny = (y + dy + state.gridHeight) % state.gridHeight
+              activeCells.add(`${nx},${ny}`)
+            }
+          }
         }
       }
     }
 
-    if (JSON.stringify(state.nextGrid) === JSON.stringify(state.grid)) {
+    // Обновление активных клеток
+    for (let cell of activeCells) {
+      let [x, y] = cell.split(',').map(Number)
+      let neighbors = getNeighborCount(x, y)
+      if (state.grid[x][y] === 1 && (neighbors < 2 || neighbors > 3)) {
+        newGrid[x][y] = 0
+        state.changedCells.add(cell)
+      } else if (state.grid[x][y] === 0 && neighbors === 3) {
+        newGrid[x][y] = 1
+        state.changedCells.add(cell)
+      }
+    }
+
+    if (JSON.stringify(newGrid) === JSON.stringify(state.grid)) {
       clearInterval(state.gameInterval)
       alert('Игра окончена!')
       return
     }
 
-    // Swap grid and nextGrid
-    ;[state.grid, state.nextGrid] = [state.nextGrid, state.grid]
-    drawGrid()
+    state.grid = newGrid
+    methods.drawGrid()
   },
 }
 
@@ -133,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const {createCanvas, createEmptyGrid} = mutation
   const {drawGrid} = methods
 
-  createCanvas('app', {w: 500, h: 500})
+  createCanvas('app', {w: 1000, h: 1000})
   createEmptyGrid()
   drawGrid()
 })
@@ -156,7 +168,9 @@ state.canvas.addEventListener('click', function (event) {
 // Actions UI
 document.getElementById('start-btn').addEventListener('click', function () {
   const {updateGrid} = mutation
-  state.gameInterval = setInterval(updateGrid, 100)
+  state.gameInterval = setInterval(function () {
+    requestAnimationFrame(updateGrid)
+  }, 100)
   //   updateGrid()
 })
 document.getElementById('pause-btn').addEventListener('click', function () {
