@@ -5,6 +5,7 @@ const state = {
   cellSize: 10,
   requestId: null,
   gameInterval: null,
+  changedCells: new Set(),
   canvas: document.createElement('canvas'),
   getCtx() {
     return this.canvas.getContext('2d')
@@ -15,27 +16,26 @@ const methods = {
   drawGrid() {
     const ctx = state.getCtx()
 
-    for (let x = 0; x < state.gridWidth; x++) {
-      for (let y = 0; y < state.gridHeight; y++) {
-        if (state.grid[x][y] === 1) {
-          ctx.fillStyle = 'black'
-        } else {
-          ctx.fillStyle = 'white'
-        }
-        ctx.fillRect(
-          x * state.cellSize,
-          y * state.cellSize,
-          state.cellSize,
-          state.cellSize
-        )
-        ctx.strokeRect(
-          x * state.cellSize,
-          y * state.cellSize,
-          state.cellSize,
-          state.cellSize
-        )
-      }
+    for (const cell of state.changedCells) {
+      const [x, y] = cell.split(',').map(Number)
+      const fillStyle = state.grid[x][y] === 1 ? 'black' : 'white'
+
+      ctx.fillStyle = fillStyle
+      ctx.fillRect(
+        x * state.cellSize,
+        y * state.cellSize,
+        state.cellSize,
+        state.cellSize
+      )
+      ctx.strokeRect(
+        x * state.cellSize,
+        y * state.cellSize,
+        state.cellSize,
+        state.cellSize
+      )
     }
+
+    state.changedCells.clear()
   },
   getNeighborCount(x, y) {
     let count = 0
@@ -82,14 +82,17 @@ const mutation = {
     for (let i = 0; i < state.gridWidth; i++) {
       state.grid[i] = new Array(state.gridHeight).fill(0)
     }
+
+    // Initialize changedCells with all cell coordinates
+    for (let x = 0; x < state.gridWidth; x++) {
+      for (let y = 0; y < state.gridHeight; y++) {
+        state.changedCells.add(`${x},${y}`)
+      }
+    }
   },
   updateGrid() {
     const {drawGrid, getNeighborCount} = methods
-
-    let newGrid = new Array(state.gridWidth)
-    for (let i = 0; i < state.gridWidth; i++) {
-      newGrid[i] = new Array(state.gridHeight).fill(0)
-    }
+    const newGrid = state.grid.map((row) => [...row])
 
     for (let x = 0; x < state.gridWidth; x++) {
       for (let y = 0; y < state.gridHeight; y++) {
@@ -98,23 +101,16 @@ const mutation = {
           newGrid[x][y] = 0
         } else if (state.grid[x][y] === 0 && neighbors === 3) {
           newGrid[x][y] = 1
-        } else {
-          newGrid[x][y] = state.grid[x][y]
+        }
+
+        if (newGrid[x][y] !== state.grid[x][y]) {
+          state.changedCells.add(`${x},${y}`)
         }
       }
     }
 
-    if (JSON.stringify(newGrid) === JSON.stringify(state.grid)) {
-      clearInterval(state.gameInterval)
-      // cancelAnimationFrame(state.requestId)
-      alert('Игра окончена!')
-      return
-    }
-
     state.grid = newGrid
     drawGrid()
-
-    // state.requestId = requestAnimationFrame(mutation.updateGrid)
   },
 }
 
@@ -122,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const {createCanvas, createEmptyGrid} = mutation
   const {drawGrid} = methods
 
-  createCanvas('app', {w: 600, h: 400})
+  createCanvas('app', {w: 10000, h: 10000})
   createEmptyGrid()
   drawGrid()
 })
@@ -130,11 +126,15 @@ document.addEventListener('DOMContentLoaded', function () {
 state.canvas.addEventListener('click', function (event) {
   const {drawGrid} = methods
   const rect = state.canvas.getBoundingClientRect()
-  // coordinates are relative to the upper left corner
+
   const x = Math.floor((event.clientX - rect.left) / state.cellSize)
   const y = Math.floor((event.clientY - rect.top) / state.cellSize)
 
-  state.grid[x][y] = 1 - state.grid[x][y] // toggle cell value on mouse click
+  state.grid[x][y] = 1 - state.grid[x][y]
+
+  // Add this cell to changedCells so it will be redrawn
+  state.changedCells.add(`${x},${y}`)
+
   drawGrid()
 })
 
@@ -150,11 +150,19 @@ document.getElementById('pause-btn').addEventListener('click', function () {
 })
 document.getElementById('clear-btn').addEventListener('click', function () {
   const {drawGrid} = methods
-  //   cancelAnimationFrame(state.requestId)
+
   clearInterval(state.gameInterval)
 
-  for (let i = 0; i < state.gridWidth; i++) {
-    state.grid[i].fill(0)
+  for (let x = 0; x < state.gridWidth; x++) {
+    for (let y = 0; y < state.gridHeight; y++) {
+      const oldValue = state.grid[x][y]
+      state.grid[x][y] = 0
+
+      // If the cell value changed, add it to changedCells
+      if (oldValue !== 0) {
+        state.changedCells.add(`${x},${y}`)
+      }
+    }
   }
 
   drawGrid()
@@ -164,7 +172,15 @@ document.getElementById('random-btn').addEventListener('click', function () {
 
   for (let x = 0; x < state.gridWidth; x++) {
     for (let y = 0; y < state.gridHeight; y++) {
-      state.grid[x][y] = Math.random() < 0.5 ? 1 : 0
+      const oldValue = state.grid[x][y]
+      const newValue = Math.random() < 0.5 ? 1 : 0
+
+      state.grid[x][y] = newValue
+
+      // If the cell value changed, add it to changedCells
+      if (oldValue !== newValue) {
+        state.changedCells.add(`${x},${y}`)
+      }
     }
   }
 
