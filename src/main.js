@@ -67,8 +67,16 @@ document.addEventListener('DOMContentLoaded', function () {
   createEmptyGrid()
   drawGrid()
 })
+
 state.canvas.addEventListener('click', function (event) {
-  console.log('click')
+  const {drawGrid} = methods
+  const rect = state.canvas.getBoundingClientRect()
+  // coordinates are relative to the upper left corner
+  const x = Math.floor((event.clientX - rect.left) / state.cellSize)
+  const y = Math.floor((event.clientY - rect.top) / state.cellSize)
+
+  state.grid[x][y] = 1 - state.grid[x][y] // toggle cell value on mouse click
+  drawGrid()
 })
 
 // Actions UI
@@ -77,4 +85,7 @@ document.getElementById('start-btn').addEventListener('click', function () {
 })
 document.getElementById('clear-btn').addEventListener('click', function () {
   console.log('clear')
+})
+document.getElementById('random-btn').addEventListener('click', function () {
+  console.log('random')
 })
