@@ -15,7 +15,11 @@ const state = {
 
 const methods = {
   drawGrid() {
-    const ctx = state.getCtx()
+    // Создание offscreen canvas с такими же размерами, как и основной canvas
+    const offscreenCanvas = document.createElement('canvas')
+    offscreenCanvas.width = state.canvas.width
+    offscreenCanvas.height = state.canvas.height
+    const offscreenCtx = offscreenCanvas.getContext('2d')
 
     for (const cell of state.changedCells) {
       const [x, y] = cell.split(',').map(Number)
@@ -25,12 +29,16 @@ const methods = {
       const xPos = x * state.cellSize
       const yPos = y * state.cellSize
 
-      ctx.fillStyle = fillStyle
-      ctx.fillRect(xPos, yPos, state.cellSize, state.cellSize)
-      ctx.strokeRect(xPos, yPos, state.cellSize, state.cellSize)
+      offscreenCtx.fillStyle = fillStyle
+      offscreenCtx.fillRect(xPos, yPos, state.cellSize, state.cellSize)
+      offscreenCtx.strokeRect(xPos, yPos, state.cellSize, state.cellSize)
     }
 
     state.changedCells.clear()
+
+    // Отображение offscreen canvas на основной canvas
+    const ctx = state.getCtx()
+    ctx.drawImage(offscreenCanvas, 0, 0)
   },
   getNeighborCount(x, y) {
     let count = 0
@@ -125,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const {createCanvas, createEmptyGrid} = mutation
   const {drawGrid} = methods
 
-  createCanvas('app', {w: 2000, h: 2000})
+  createCanvas('app', {w: 500, h: 500})
   createEmptyGrid()
   drawGrid()
 })
