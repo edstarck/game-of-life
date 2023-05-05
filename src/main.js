@@ -20,19 +20,13 @@ const methods = {
       const [x, y] = cell.split(',').map(Number)
       const fillStyle = state.grid[x][y] === 1 ? 'black' : 'white'
 
+      // cash coordinates
+      const xPos = x * state.cellSize
+      const yPos = y * state.cellSize
+
       ctx.fillStyle = fillStyle
-      ctx.fillRect(
-        x * state.cellSize,
-        y * state.cellSize,
-        state.cellSize,
-        state.cellSize
-      )
-      ctx.strokeRect(
-        x * state.cellSize,
-        y * state.cellSize,
-        state.cellSize,
-        state.cellSize
-      )
+      ctx.fillRect(xPos, yPos, state.cellSize, state.cellSize)
+      ctx.strokeRect(xPos, yPos, state.cellSize, state.cellSize)
     }
 
     state.changedCells.clear()
@@ -118,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const {createCanvas, createEmptyGrid} = mutation
   const {drawGrid} = methods
 
-  createCanvas('app', {w: 10000, h: 10000})
+  createCanvas('app', {w: 1000, h: 1000})
   createEmptyGrid()
   drawGrid()
 })
