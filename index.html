@@ -4,10 +4,35 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game of life</title>
+    <title>Conway's Game of Life on Torus</title>
     <link rel="stylesheet" href="./src/assets/style/index.css">
+    <style>
+        #app {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .title {
+            text-align: center;
+        }
+        .ctrl-btns {
+            display: flex;
+            margin: 16px 0;
+        }
+        .ctrl-btns * {
+            margin: 0 8px;
+        }
+    </style>
 </head>
 <body>
+    <div id="app">
+        <h1 class="title">Conway's Game of Life on Torus</h1>
+        <div class="ctrl-btns">
+            <button id="start-btn">Start</button>
+            <button id="clear-btn">Clear</button>
+        </div>
+    </div>
+
     <script src="./src/main.js"></script>
 </body>
 </html>
