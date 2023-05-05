@@ -2,7 +2,7 @@ const state = {
   grid: null,
   gridWidth: null,
   gridHeight: null,
-  cellSize: 20,
+  cellSize: 10,
   requestId: null,
   gameInterval: null,
   canvas: document.createElement('canvas'),
@@ -104,6 +104,13 @@ const mutation = {
       }
     }
 
+    if (JSON.stringify(newGrid) === JSON.stringify(state.grid)) {
+      clearInterval(state.gameInterval)
+      // cancelAnimationFrame(state.requestId)
+      alert('Игра окончена!')
+      return
+    }
+
     state.grid = newGrid
     drawGrid()
 
@@ -135,14 +142,15 @@ state.canvas.addEventListener('click', function (event) {
 document.getElementById('start-btn').addEventListener('click', function () {
   const {updateGrid} = mutation
   state.gameInterval = setInterval(updateGrid, 100)
+  //   updateGrid()
 })
 document.getElementById('pause-btn').addEventListener('click', function () {
-  //  cancelAnimationFrame(state.requestId)
+  //   cancelAnimationFrame(state.requestId)
   clearInterval(state.gameInterval)
 })
 document.getElementById('clear-btn').addEventListener('click', function () {
   const {drawGrid} = methods
-
+  //   cancelAnimationFrame(state.requestId)
   clearInterval(state.gameInterval)
 
   for (let i = 0; i < state.gridWidth; i++) {
